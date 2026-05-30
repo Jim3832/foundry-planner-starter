@@ -3,27 +3,30 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function GET(
   _: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const { id } = context.params;
 
   const supabase = getSupabaseAdmin();
+
   const { data, error } = await supabase
     .from('plans')
     .select('*')
     .eq('id', id)
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 404 });
+  }
 
   return NextResponse.json(data);
 }
 
 export async function PUT(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: { id: string } }
 ) {
-  const { id } = await context.params;
+  const { id } = context.params;
   const body = await req.json();
   const edit = new URL(req.url).searchParams.get('edit');
 
@@ -35,7 +38,10 @@ export async function PUT(
     .eq('id', id)
     .single();
 
-  if (readError) return NextResponse.json({ error: readError.message }, { status: 404 });
+  if (readError) {
+    return NextResponse.json({ error: readError.message }, { status: 404 });
+  }
+
   if (!edit || edit !== existing.edit_key) {
     return NextResponse.json({ error: 'Invalid edit key' }, { status: 403 });
   }
@@ -53,7 +59,9 @@ export async function PUT(
     .select('*')
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   return NextResponse.json(data);
 }
