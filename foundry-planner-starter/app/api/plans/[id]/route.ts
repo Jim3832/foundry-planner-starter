@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
-export async function GET(
-  _req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: NextRequest, context: any) {
   const { id } = await context.params;
 
   const supabase = getSupabaseAdmin();
@@ -22,10 +19,7 @@ export async function GET(
   return NextResponse.json(data);
 }
 
-export async function PUT(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PUT(req: NextRequest, context: any) {
   const { id } = await context.params;
   const body = await req.json();
   const edit = req.nextUrl.searchParams.get('edit');
