@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function GET(
-  _: Request,
-  context: { params: { id: string } }
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
 
   const supabase = getSupabaseAdmin();
 
@@ -23,12 +23,12 @@ export async function GET(
 }
 
 export async function PUT(
-  req: Request,
-  context: { params: { id: string } }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
-  const { id } = context.params;
+  const { id } = await context.params;
   const body = await req.json();
-  const edit = new URL(req.url).searchParams.get('edit');
+  const edit = req.nextUrl.searchParams.get('edit');
 
   const supabase = getSupabaseAdmin();
 
