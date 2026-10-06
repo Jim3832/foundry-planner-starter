@@ -1,0 +1,504 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#08111e"><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icons/icon-192.png"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>ARC Foundry Planner v4.3</title>
+<style>
+:root{
+  --bg:#08111e;--panel:#101d30;--line:#29415f;--text:#f2f7ff;--muted:#9db0c8;
+  --y:#f4c542;--r:#ef5148;--b:#3498db;--cyan:#38bdf8;--good:#49d98a;--warn:#ffd166;
+  --sel:#8be9fd;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,textarea{font:inherit}
+.app{max-width:1400px;margin:auto;padding:10px}
+.top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.top h1{font-size:20px;margin:4px auto 4px 0}
+.btn,.tab,.viewtab{
+  background:#16263b;color:white;border:1px solid var(--line);border-radius:9px;
+  padding:10px 12px;font-weight:800;cursor:pointer;touch-action:manipulation
+}
+.tab.active,.btn.primary,.viewtab.active{background:#087ba9}
+.btn.danger{background:#5a2030}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:10px;margin-top:10px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+.panel h2{font-size:14px;margin:0 0 7px}
+.small{font-size:12px;color:var(--muted)}
+textarea{width:100%;background:#07111f;color:white;border:1px solid var(--line);border-radius:8px;padding:8px}
+.players textarea{height:155px}
+.roster{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{
+  display:inline-block;padding:6px 8px;background:#172c47;border:1px solid #4b6d91;
+  border-radius:999px;cursor:pointer;user-select:none;font-size:12px;touch-action:manipulation
+}
+.chip.selected{outline:3px solid var(--sel);background:#204a67}
+.chip.assigned{font-size:10px;padding:4px 6px;margin:1px}
+.rules div{padding:6px 0;border-bottom:1px solid #203650}
+.rules div:last-child{border:0}
+.mapwrap{overflow:auto}
+.map{
+  position:relative;width:1050px;height:820px;margin:auto;border:1px solid var(--line);
+  border-radius:18px;overflow:hidden;
+  background:radial-gradient(circle at 50% 45%,#705a4c 0,#4a3b38 43%,#202c39 77%,#0b1421 100%)
+}
+.map:after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 45%,transparent 0 61%,rgba(0,0,0,.34) 78%)}
+.zone{position:absolute;border:4px dashed;border-radius:48%;opacity:.62;pointer-events:none;z-index:1}
+.zy{border-color:var(--y);left:3%;top:3%;width:34%;height:67%}
+.zr{border-color:var(--r);left:33%;top:8%;width:36%;height:82%}
+.zb{border-color:var(--b);right:3%;top:3%;width:30%;height:67%}
+.building{
+  position:absolute;width:145px;min-height:122px;transform:translate(-50%,-50%);
+  background:rgba(5,13,25,.95);border:2px solid #59728e;border-radius:12px;padding:7px;z-index:3
+}
+.building.y{border-color:var(--y)} .building.r{border-color:var(--r)} .building.b{border-color:var(--b)}
+.building.anchor{box-shadow:0 0 0 4px rgba(255,209,80,.45)}
+.building:hover,.building:focus-within{z-index:15}
+.building h3{font-size:12px;margin:0 0 5px;text-align:center}
+.slot{
+  position:relative;z-index:8;min-height:31px;border:1px dashed #66809d;border-radius:7px;margin-top:4px;padding:4px;
+  color:var(--muted);cursor:pointer;touch-action:manipulation
+}
+.slot.lead{border-color:#f5a742}
+.slot.tapready{box-shadow:inset 0 0 0 2px var(--sel);color:white}
+.status{text-align:center;font-size:11px;margin-top:3px}.good{color:var(--good)}.warn{color:var(--warn)}
+.mobile{
+  position:absolute;left:50%;bottom:4px;transform:translateX(-50%);width:255px;z-index:4;
+  background:#071b2b;border:2px solid var(--cyan);border-radius:12px;padding:7px;text-align:center
+}
+.mobile .slot{min-height:36px}
+.legend{position:absolute;left:8px;bottom:8px;z-index:4;background:rgba(4,11,20,.9);padding:6px 8px;border-radius:8px;font-size:11px}
+.toolbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.priority{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 9px}
+.badge{background:#0b1728;border:1px solid var(--line);border-radius:999px;padding:5px 7px;font-size:11px}
+.help{line-height:1.45}
+.selection{
+  padding:9px;border:1px solid #365674;border-radius:9px;background:#0b1728;margin-top:8px
+}
+.selection b{color:var(--sel)}
+.hidden{display:none!important}
+.outputgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.outputcard{background:#0c1828;border:1px solid var(--line);border-radius:10px;padding:10px}
+.outputcard textarea{height:260px}
+.outputcard textarea[readonly]{height:190px;line-height:1.35;font-size:14px;resize:vertical}
+.outtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.copyrow{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.phasehead{font-weight:900;font-size:16px;margin-bottom:8px}
+@media(max-width:850px){
+  .layout{grid-template-columns:1fr}
+  .mapwrap{margin:0 -10px;padding:0 10px}
+  .outputgrid{grid-template-columns:1fr}
+  .app{padding:7px}
+  .top h1{width:100%}
+  .map{width:1050px;height:820px}
+}
+
+.boardwrap{overflow:auto;padding-bottom:8px}
+.board{
+  min-width:1120px;background:#eef3f8;color:#101820;border:1px solid #9aa8b6;
+  border-radius:10px;overflow:hidden;font-size:12px
+}
+.boardtitle{background:#29a9dd;color:#07131d;font-size:15px;font-weight:900;padding:8px 10px}
+.boardphase{border-top:5px solid #d9e2ec}
+.boardphasehead{display:grid;grid-template-columns:125px 1fr;background:#a8d0f0;font-weight:900;font-size:14px}
+.boardphasehead>div{padding:8px}
+.boardrow{display:grid;grid-template-columns:125px 1fr}
+.boardlabel{background:#f6c3c3;font-size:17px;font-weight:900;padding:12px 8px;display:flex;align-items:center}
+.boardcards{display:flex;align-items:stretch;gap:0;overflow:visible}
+.boardcard{width:155px;flex:0 0 155px;border-left:1px solid #aeb8c2;background:white;text-align:center}
+.boardcard.y .boardcardhead{background:#f4c542}
+.boardcard.r .boardcardhead{background:#ef5148;color:white}
+.boardcard.b .boardcardhead{background:#3498db;color:white}
+.boardcardhead{padding:6px 4px;font-weight:900;min-height:42px;display:flex;align-items:center;justify-content:center}
+.boardbody{padding:7px 5px;line-height:1.35;min-height:105px}
+.boardbody .r1{font-weight:900}
+.boardbody .r2{font-weight:800;margin-top:3px}
+.boardbody .joins{margin-top:5px;font-size:11px}
+.boardmobile{background:#dff5ff;border-top:1px solid #9ebccc;padding:7px 10px;font-weight:800}
+.boardrules{background:#dceaf4;border-top:1px solid #9ebccc;padding:7px 10px;font-weight:700}
+
+
+.sharepanel{
+  margin-top:10px;background:#10253b;border:2px solid #38bdf8;border-radius:12px;padding:10px
+}
+.sharepanel textarea{height:92px;font-size:12px}
+.sharestatus{margin-top:8px;padding:8px 10px;border-radius:8px;background:#0b1728;border:1px solid #29415f}
+.sharestatus.good{color:#d9fff0;border-color:#49d98a}
+
+select{background:#07111f;color:white;border:1px solid var(--line);border-radius:8px;padding:10px;max-width:100%}
+.chip{color:#fff;text-align:left}.chip-green{background:#123f31;border-color:#49d98a}.chip-mobile{background:#4d3b13;border-color:#ffd166}.chip-red{background:#4c1e2b;border-color:#ff748a}.chip.selected{outline:3px solid #8be9fd}.roster-summary{padding:8px;border:1px solid #49d98a;border-radius:8px;margin:8px 0;color:#b5fbd2;font-weight:800}.roster-summary.has-missing{border-color:#ff748a;color:#ffd0d9}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <h1>🏭 ARC Foundry Planner v4.3</h1>
+    <button class="viewtab active" data-view="planner">Planner</button>
+    <button class="viewtab" data-view="outputs">Plan Extracts</button>
+    <button class="viewtab" data-view="board">Overall Board</button>
+    <button class="btn" id="save">Save on Device</button>
+    <button class="btn" id="load">Load Device Save</button>
+    <button class="btn primary" id="sharePlan">Share Plan</button>
+    <button class="btn danger" id="reset">Reset</button>
+  </div>
+
+  <div id="sharedLoaded" class="sharestatus good hidden">
+    ✅ Shared plan loaded from the link. You can edit it normally. It will not replace your device save unless you press <b>Save on Device</b>.
+  </div>
+
+  <div id="sharePanel" class="sharepanel hidden">
+    <b>🔗 Share this exact plan</b>
+    <div class="small" style="margin:4px 0 7px">Send this link to Athena. She can open it, edit the plan, then press <b>Share Plan</b> herself and send her updated link back to you.</div>
+    <textarea id="shareLink" readonly></textarea>
+    <div class="copyrow">
+      <button class="btn primary" id="copyShareLink">Copy Share Link</button>
+      <button class="btn" id="closeShare">Close</button>
+    </div>
+  </div>
+
+  <section id="plannerView">
+    <div class="top" style="margin-top:8px">
+      <button class="tab active" data-p="p1">Phase 1</button>
+      <button class="tab" data-p="p23">Phase 2/3</button>
+      <button class="tab" data-p="p4">Phase 4</button>
+    </div>
+
+    <div class="layout">
+      <aside>
+        <div class="panel players">
+          <h2>1. Paste roster in strength order</h2>
+          <div class="small">One player per line. On Chrome/mobile: <b>tap a player, then tap Rally Lead 1 / Rally Lead 2 / Joiners / Mobile Whale</b>.</div>
+          <textarea id="input" placeholder="Ares&#10;Sultan&#10;Blade&#10;Kedeux&#10;..."></textarea>
+          <div class="toolbar">
+            <button class="btn primary" id="rosterBtn">Load roster</button>
+            <button class="btn" id="autoP1">Auto-build Phase 1</button>
+            <button class="btn" id="autoP23">Reset Phase 2/3 overrides</button>
+          </div>
+          <div id="selection" class="selection">Selected: <b>none</b><br><span class="small">Tap a player to select them.</span></div>
+          <div id="rosterSummary" class="roster-summary"></div><div class="toolbar"><button class="btn" id="filterMissing">Unassigned only</button><button class="btn" id="undo">Undo last change</button></div><div id="roster" class="roster"></div>
+          <div class="toolbar" style="margin-top:8px">
+            <button class="btn" id="unassign">Unassign selected</button>
+            <button class="btn" id="clearSelection">Clear selection</button>
+          </div>
+        </div>
+
+        <div class="panel"><h2>Battle Commander</h2><select id="commander" aria-label="Battle Commander"><option value="">None</option></select><div class="small">Separate from building assignments.</div></div>
+        <div class="panel rules">
+          <h2>Current doctrine</h2>
+          <div><b>Phase 1</b><br>Rally leads are assigned first by power: #1 P2, #2 P1, #3 Boiler, #4 Transit, #5 P1 second lead, #6 P2 second lead, #7–10 Repairs. Then joiners.</div>
+          <div><b>Mobile whale</b><br>One whale helps first occupation, then stays uncommitted and responds to pressure.</div>
+          <div><b>Phase 2/3</b><br>Derived directly from Phase 1. P1 stays; P2 goes to Middle. Changes here are local overrides only.</div>
+          <div><b>Phase 4</b><br>Derived directly from Phase 1, not Phase 2/3. P1 stays; P2 returns to P2. Local overrides only. Zones OFF; hit & run, double rallies, final centre push.</div>
+        </div>
+
+        <div class="panel help">
+          <h2>Chrome/mobile controls</h2>
+          <b>Tap method:</b> tap a player → tap the target Lead/Joiners/Mobile slot.<br>
+          You can also tap an already-assigned player, then tap a different slot to move them.<br>
+          Drag-and-drop is still supported on desktop.
+        </div>
+      </aside>
+
+      <main>
+        <div class="panel">
+          <div class="toolbar">
+            <button class="btn primary" id="transition">View next phase →</button>
+            <button class="btn" id="clear">Clear phase</button>
+            <button class="btn" id="toOutputs">Generate plan extracts</button>
+          </div>
+          <div id="priority" class="priority"></div>
+          <div class="mapwrap"><div id="map" class="map"></div></div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <section id="outputsView" class="hidden">
+    <div class="panel" style="margin-top:10px">
+      <div class="toolbar">
+        <button class="btn primary" id="generateAll">Generate all extracts</button>
+        <button class="btn" id="backPlanner">Back to planner</button>
+      </div>
+      <div class="small">This is deliberately separate from the map so the finished plan can be reviewed and copied without scrolling around the planner.</div>
+    </div>
+
+    <div class="panel">
+      <div class="phasehead">In-game messages — copy one phase at a time</div>
+      <div class="small" style="margin-bottom:10px">Compact format for game chat: one building per line, lead first, no blank lines.</div>
+      <div class="outputgrid">
+        <div class="outputcard"><b>Phase 1 — Take Buildings</b><textarea id="game_p1" readonly></textarea><div class="copyrow"><button class="btn primary" data-copy="game_p1">Copy Phase 1 in-game</button></div></div>
+        <div class="outputcard"><b>Phase 2/3 — Hold &amp; Collect</b><textarea id="game_p23" readonly></textarea><div class="copyrow"><button class="btn primary" data-copy="game_p23">Copy Phase 2/3 in-game</button></div></div>
+        <div class="outputcard"><b>Phase 4 — Hit &amp; Run</b><textarea id="game_p4" readonly></textarea><div class="copyrow"><button class="btn primary" data-copy="game_p4">Copy Phase 4 in-game</button></div></div>
+      </div>
+    </div>
+    <details class="panel"><summary style="cursor:pointer;font-weight:800">Discord detailed extracts (optional)</summary>
+      <div class="outputgrid" style="margin-top:10px">
+        <div class="outputcard"><b>Phase 1</b><textarea id="discord_p1"></textarea><div class="copyrow"><button class="btn" data-copy="discord_p1">Copy Phase 1 Discord</button></div></div>
+        <div class="outputcard"><b>Phase 2/3</b><textarea id="discord_p23"></textarea><div class="copyrow"><button class="btn" data-copy="discord_p23">Copy Phase 2/3 Discord</button></div></div>
+        <div class="outputcard"><b>Phase 4</b><textarea id="discord_p4"></textarea><div class="copyrow"><button class="btn" data-copy="discord_p4">Copy Phase 4 Discord</button></div></div>
+      </div>
+    </details>
+  </section>
+
+  <section id="boardView" class="hidden">
+    <div class="panel" style="margin-top:10px">
+      <div class="toolbar">
+        <button class="btn primary" id="refreshBoard">Refresh board</button>
+        <button class="btn" id="copyBoardText">Copy board as text</button>
+        <button class="btn" id="backPlannerBoard">Back to planner</button>
+      </div>
+      <div class="small">One-page overview of all three phases, designed in the same spirit as the old Google Sheets/formatter board.</div>
+    </div>
+    <div class="boardwrap"><div id="overallBoard" class="board"></div></div>
+  </section>
+
+</div>
+
+<script>
+const defs={
+p1:{zones:true,priority:['🥇 P1 + P2 — 4 strong each','🥈 Boiler','🥉 Transit','4️⃣ Repairs'],b:[
+ ['Boiler',14,12,'y'],['P1',14,42,'y'],['R1',14,72,'y'],
+ ['Mercenary',50,10,'r'],['Middle',50,34,'r'],['Munition',50,58,'r'],
+ ['R3',37,82,'r'],['Transit',63,82,'r'],
+ ['R4',86,12,'b'],['R2',86,42,'b'],['P2',86,72,'b']]},
+p23:{zones:true,priority:['🥇 P1 + Middle — 4 strong each','🥈 Boiler','🥉 Munition','4️⃣ Workshops / selected objectives'],b:[
+ ['Boiler',14,12,'y'],['P1',14,42,'y'],['Workshop NW',14,72,'y'],
+ ['Mercenary',50,10,'r'],['Middle',50,34,'r'],['Munition',50,58,'r'],
+ ['Workshop SW',37,82,'r'],['Workshop SE',63,82,'r'],
+ ['Workshop NE',86,20,'b'],['P2',86,62,'b']]},
+p4:{zones:false,priority:['💥 Zones OFF','⚔️ Hit & run / double rally','🎯 Take value, move again','🔥 Final 5 — centre push'],b:[
+ ['Boiler',14,12,'y'],['P1',14,42,'y'],['R1',14,72,'y'],
+ ['Mercenary',50,10,'r'],['Middle',50,34,'r'],['Munition',50,58,'r'],
+ ['R3',37,82,'r'],['Transit',63,82,'r'],
+ ['R4',86,12,'b'],['R2',86,42,'b'],['P2',86,72,'b']]}
+};
+
+const $=s=>document.querySelector(s), phases=['p1','p23','p4'];
+const routes={p23:{P1:'P1',P2:'Middle',Boiler:'Boiler',Transit:'Munition',R1:'Workshop NW',R3:'Workshop SW',R2:'Workshop SE',R4:'Workshop NE'},p4:{P1:'P1',P2:'P2',Boiler:'Boiler',Transit:'Munition',R1:'R1',R3:'R3',R2:'R2',R4:'R4'}};
+let phase='p1',view='planner',players=[],selected=null,filterMissing=false,commander=null;
+// Canonical assignments: one entry per player ID per phase. Overrides are local to the later phase.
+let master={},overrides={p23:{},p4:{}},history=[];
+const clone=x=>JSON.parse(JSON.stringify(x));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ze=z=>z==='y'?'🟡':z==='r'?'🔴':'🔵';
+const pname=id=>players.find(p=>p.id===id)?.name||'(unknown)';
+const idExists=id=>players.some(p=>p.id===id);
+const playerId=()=> 'p'+Math.random().toString(36).slice(2,11)+Date.now().toString(36);
+const validBuilding=(ph,b)=>defs[ph].b.some(row=>row[0]===b);
+function derive(ph){
+ if(ph==='p1')return clone(master);
+ const result={};
+ for(const [id,a] of Object.entries(master)){
+  if(a?.building==='Mobile')result[id]={building:'Mobile',role:'mobile'};
+  else if(a&&routes[ph][a.building])result[id]={building:routes[ph][a.building],role:a.role};
+ }
+ for(const [id,a] of Object.entries(overrides[ph])){
+  if(a===null)delete result[id];else result[id]=clone(a);
+ }
+ return result;
+}
+function groups(ph){
+ const out={};for(const [id,a] of Object.entries(derive(ph))){
+  if(!idExists(id)||!a||a.building==='Mobile')continue;
+  if(!out[a.building])out[a.building]={lead1:[],lead2:[],join:[]};
+  out[a.building][a.role]?.push(id);
+ }return out;
+}
+function snapshot(){history.push(clone({master,overrides,players,commander}));if(history.length>35)history.shift();}
+function updateAssignment(id,assignment,ph=phase){
+ if(!idExists(id))return;
+ const map=derive(ph);
+ if(assignment?.role==='lead1'||assignment?.role==='lead2'){
+  for(const [other,a] of Object.entries(map)){
+   if(other!==id&&a?.building===assignment.building&&a.role===assignment.role){alert('That rally lead slot is occupied. Move or unassign '+pname(other)+' first.');return;}
+  }
+ }
+ if(assignment?.building==='Mobile'){
+  const other=Object.entries(map).find(([pid,a])=>pid!==id&&a?.building==='Mobile');
+  if(other){alert('Mobile Whale is occupied by '+pname(other[0])+'. Move that player first.');return;}
+ }
+ snapshot();
+ if(ph==='p1'){
+  if(assignment)master[id]=clone(assignment);else delete master[id];
+ }else{
+  // A local override is never written to Phase 1 or another phase.
+  overrides[ph][id]=assignment?clone(assignment):null;
+ }
+ selected=null;render();
+}
+function assign(b,role){if(selected)updateAssignment(selected,{building:b,role});}
+function playerChip(id,small=false){
+ const a=derive(phase)[id],el=document.createElement('button');el.type='button';
+ el.className='chip'+(small?' assigned':'')+(selected===id?' selected':'')+' '+(a?(a.building==='Mobile'?'chip-mobile':'chip-green'):'chip-red');
+ el.textContent=pname(id)+(small?'':a?' → '+(a.building==='Mobile'?'Mobile':a.building+' '+({lead1:'L1',lead2:'L2',join:'Join'}[a.role]||'')):' → Unassigned');
+ el.title=a?`${pname(id)}: ${a.building} ${a.role}`:'Unassigned in this phase';
+ el.draggable=true;
+ el.onclick=e=>{e.stopPropagation();selected=selected===id?null:id;render()};
+ el.ondragstart=e=>{selected=id;e.dataTransfer.setData('text/plain',id)};
+ return el;
+}
+function renderRoster(){
+ const r=$('#roster');r.replaceChildren();const data=derive(phase);
+ let assigned=0,mobile=0,missing=0;
+ for(const p of players){if(data[p.id]){if(data[p.id].building==='Mobile')mobile++;else assigned++;}else missing++;}
+ $('#rosterSummary').textContent=`${assigned} assigned · ${mobile} mobile · ${missing} unassigned / ${players.length} players`;
+ $('#rosterSummary').className='roster-summary'+(missing?' has-missing':'');
+ for(const p of players){if(filterMissing&&data[p.id])continue;r.appendChild(playerChip(p.id));}
+ $('#selection').innerHTML=selected?`Selected: <b>${esc(pname(selected))}</b><br><span class="small">Tap a target slot to move this player.</span>`:'Selected: <b>none</b><br><span class="small">Tap a player, then tap a target slot.</span>';
+ $('#filterMissing').textContent=filterMissing?'Show all':'Unassigned only';
+}
+function render(){renderRoster();renderMap();if(view==='board')renderBoard();}
+function renderMap(){
+ const m=$('#map');m.replaceChildren();
+ $('#priority').innerHTML=defs[phase].priority.map(x=>`<span class="badge">${esc(x)}</span>`).join('');
+ if(defs[phase].zones)for(const c of ['zy','zr','zb']){const z=document.createElement('div');z.className='zone '+c;m.appendChild(z)}
+ const grouped=groups(phase);
+ for(const [b,x,y,z] of defs[phase].b){
+  const e=document.createElement('div');e.className='building '+z+((phase==='p1'&&['P1','P2'].includes(b))||(phase==='p23'&&['P1','Middle'].includes(b))?' anchor':'');
+  e.style.left=x+'%';e.style.top=y+'%';e.innerHTML=`<h3>${ze(z)} ${esc(b)}</h3>`;
+  const g=grouped[b]||{lead1:[],lead2:[],join:[]};
+  for(const role of ['lead1','lead2','join']){
+   const slot=document.createElement('div');slot.className='slot'+(role!=='join'?' lead':'')+(selected?' tapready':'');
+   slot.textContent={lead1:'Rally Lead 1',lead2:'Rally Lead 2',join:'Joiners'}[role];
+   slot.onclick=ev=>{ev.stopPropagation();assign(b,role)};
+   slot.ondragover=ev=>ev.preventDefault();slot.ondrop=ev=>{ev.preventDefault();selected=ev.dataTransfer.getData('text/plain');assign(b,role)};
+   for(const id of g[role])slot.appendChild(playerChip(id,true));e.appendChild(slot);
+  }
+  if((phase==='p1'&&['P1','P2'].includes(b))||(phase==='p23'&&['P1','Middle'].includes(b))){
+   const count=g.lead1.length+g.lead2.length+g.join.length,st=document.createElement('div');
+   st.className='status '+(count===4?'good':'warn');st.textContent=count+'/4 players';e.appendChild(st);
+  }m.appendChild(e);
+ }
+ const mob=document.createElement('div');mob.className='mobile';mob.innerHTML='🐋 <b>MOBILE WHALE</b>';
+ const slot=document.createElement('div');slot.className='slot'+(selected?' tapready':'');
+ slot.onclick=ev=>{ev.stopPropagation();if(selected)updateAssignment(selected,{building:'Mobile',role:'mobile'})};
+ slot.ondragover=ev=>ev.preventDefault();slot.ondrop=ev=>{ev.preventDefault();selected=ev.dataTransfer.getData('text/plain');if(selected)updateAssignment(selected,{building:'Mobile',role:'mobile'})};
+ const ids=Object.entries(derive(phase)).filter(([,a])=>a?.building==='Mobile').map(([id])=>id);
+ if(ids.length)for(const id of ids)slot.appendChild(playerChip(id,true));else slot.textContent='Tap here after selecting whale';mob.appendChild(slot);m.appendChild(mob);
+ const lg=document.createElement('div');lg.className='legend';lg.textContent=defs[phase].zones?'🟡 West/NW  🔴 Centre/South  🔵 East/NE':'PHASE 4: geographic zones disabled';m.appendChild(lg);
+}
+// Game exports deliberately use one compact building line, matching the in-game reference.
+const gameOrders={
+ p1:['P1','P2','Boiler','Transit','R1','R2','R3','R4','Middle','Munition','Mercenary'],
+ p23:['Middle','P1','Munition','Workshop NE','Workshop SE','Workshop SW','Workshop NW','Boiler','P2','Mercenary'],
+ p4:['P1','P2','Munition','R1','R2','R3','R4','Boiler','Middle','Transit','Mercenary']
+};
+const gameIcons={Middle:'🎯',P1:'🏰',P2:'🏰',Munition:'💣',Boiler:'🔥',Transit:'🚉',
+ 'Workshop NE':'🏭','Workshop SE':'🏭','Workshop SW':'🏭','Workshop NW':'🏭',
+ R1:'🔧',R2:'🔧',R3:'🔧',R4:'🔧',Mercenary:'⚔️'};
+function phaseOutputs(ph){
+ const title=ph==='p1'?'PHASE 1 — TAKE BUILDINGS':ph==='p23'?'PHASE 2/3 — HOLD & COLLECT':'PHASE 4 — HIT & RUN';
+ const disc=[title,'',...defs[ph].priority,''];
+ const game=[(ph==='p4'?'🔥 ':'')+title],g=groups(ph);
+ for(const [b,,,z] of defs[ph].b){const d=g[b];if(!d||!Object.values(d).some(a=>a.length))continue;
+  disc.push(ze(z)+' '+b,'Rally 1: '+(d.lead1.map(pname).join(', ')||'TBC'));
+  if(d.lead2.length)disc.push('Rally 2: '+d.lead2.map(pname).join(', '));
+  if(d.join.length)disc.push('Joiners: '+d.join.map(pname).join(' • '));
+  disc.push('');
+ }
+ // Leads appear first; the game extract intentionally omits role prefixes to save space.
+ for(const b of gameOrders[ph]){
+  const d=g[b];if(!d||!Object.values(d).some(a=>a.length))continue;
+  const names=[...d.lead1,...d.lead2,...d.join].map(pname);
+  game.push((gameIcons[b]||'📍')+' '+b+': '+names.join(', '));
+ }
+ const mobiles=Object.entries(derive(ph)).filter(([,a])=>a?.building==='Mobile').map(([id])=>pname(id));
+ if(mobiles.length){disc.push('MOBILE WHALE: '+mobiles.join(', '));game.push('🐋 Mobile: '+mobiles.join(', '));}
+ if(commander&&idExists(commander)){disc.push('BATTLE COMMANDER: '+pname(commander));game.push('📣 Commander: '+pname(commander));}
+ if(ph==='p4')disc.push('Zones OFF. Hit & run, double rallies, final five-minute centre push.');
+ return {discord:disc.join('\n'),game:game.join('\n')};
+}
+function generateAll(){for(const ph of phases){const o=phaseOutputs(ph);$('#discord_'+ph).value=o.discord;const el=$('#game_'+ph);el.value=o.game;el.style.height=Math.min(440,Math.max(145,Math.ceil(o.game.length/42)*19+45))+'px';}}
+function renderBoard(){
+ let html='<div class="boardtitle">FOUNDRY PLAN — FULL FLOW</div>';
+ for(const ph of phases){const g=groups(ph);html+=`<div class="boardphase"><div class="boardphasehead"><div>${{p1:'PHASE 1',p23:'PHASE 2/3',p4:'PHASE 4'}[ph]}</div><div>${ph==='p1'?'FIRST OCCUPATION':ph==='p23'?'HOLD & COLLECT':'HIT & RUN'}</div></div><div class="boardrow"><div class="boardlabel">${ph==='p1'?'Take Buildings':ph==='p23'?'Hold & Collect':'Hit & Run'}</div><div class="boardcards">`;
+  for(const [b,,,z] of defs[ph].b){const d=g[b];if(!d||!Object.values(d).some(a=>a.length))continue;
+   html+=`<div class="boardcard ${z}"><div class="boardcardhead">${ze(z)} ${esc(b)}</div><div class="boardbody"><div class="r1">R1: ${esc(d.lead1.map(pname).join(', ')||'TBC')}</div><div class="r2">${d.lead2.length?'R2: '+esc(d.lead2.map(pname).join(', ')):''}</div><div class="joins">${d.join.map(id=>esc(pname(id))).join('<br>')}</div></div></div>`;
+  }html+='</div></div></div>';
+ }$('#overallBoard').innerHTML=html;
+}
+function setView(v){view=v;for(const name of ['planner','outputs','board'])$('#'+name+'View').classList.toggle('hidden',name!==v);document.querySelectorAll('.viewtab').forEach(t=>t.classList.toggle('active',t.dataset.view===v));if(v==='outputs')generateAll();if(v==='board')renderBoard();}
+function syncTabs(){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.p===phase));$('#transition').textContent='View next phase →';}
+function nextPhase(){phase=phase==='p1'?'p23':'p4';syncTabs();render();}
+function autoP1(){
+ if(players.length<10)return alert('Load at least 10 players first.');
+ if(Object.keys(master).length&&!confirm('Replace Phase 1 assignments? Existing later-phase overrides will be preserved.'))return;
+ snapshot();master={};
+ const place=(idx,b,role)=>{if(players[idx])master[players[idx].id]={building:b,role}};
+ [['P2','lead1'],['P1','lead1'],['Boiler','lead1'],['Transit','lead1'],['P1','lead2'],['P2','lead2'],['R1','lead1'],['R3','lead1'],['R2','lead1'],['R4','lead1']].forEach(([b,r],i)=>place(i,b,r));
+ [10,12].forEach(i=>place(i,'P1','join'));[11,13].forEach(i=>place(i,'P2','join'));
+ const rest=['Boiler','Transit','R1','R3','R2','R4'];for(let i=14;i<players.length;i++)place(i,rest[(i-14)%rest.length],'join');render();
+}
+function loadRoster(){
+ const names=$('#input').value.split(/\n|,/).map(s=>s.trim()).filter(Boolean);
+ if(!names.length)return alert('Paste at least one player.');
+ const previous=new Map();for(const p of players){const a=previous.get(p.name)||[];a.push(p.id);previous.set(p.name,a)}
+ const next=names.map(name=>({id:previous.get(name)?.shift()||null,name}));
+ // A single typo correction in the same roster position retains its stable ID.
+ const claimed=new Set(next.map(p=>p.id).filter(Boolean));
+ next.forEach((p,i)=>{if(!p.id&&players[i]&&!claimed.has(players[i].id)){p.id=players[i].id;claimed.add(p.id);}});
+ next.forEach(p=>{if(!p.id)p.id=playerId()});
+ const removed=players.filter(p=>!next.some(q=>q.id===p.id));
+ if(removed.length&&!confirm(`${removed.length} player(s) will be removed and their assignments deleted. Continue?`))return;
+ snapshot();players=next;const ids=new Set(players.map(p=>p.id));for(const m of [master,overrides.p23,overrides.p4])for(const id of Object.keys(m))if(!ids.has(id))delete m[id];
+ if(!ids.has(commander))commander=null;render();
+}
+function normaliseLegacy(d){
+ if(Array.isArray(d.players)&&d.players.every(p=>p&&typeof p==='object'&&p.id))return d;
+ const names=Array.isArray(d.players)?d.players:[];
+ const ps=names.map(name=>({id:playerId(),name:String(name)}));const used=new Set();
+ const convert=ph=>{const result={};const st=d.state?.[ph]||{};
+  for(const [b,slots] of Object.entries(st))for(const role of ['lead1','lead2','join'])for(const name of slots?.[role]||slots?.[role==='lead1'?'lead':'unused']||[]){
+   const candidate=ps.find(p=>p.name===name&&!used.has(ph+':'+p.id));if(candidate){result[candidate.id]={building:b,role};used.add(ph+':'+candidate.id);}
+  }
+  for(const name of d.mobile?.[ph]||[]){const candidate=ps.find(p=>p.name===name&&!used.has(ph+':'+p.id));if(candidate){result[candidate.id]={building:'Mobile',role:'mobile'};used.add(ph+':'+candidate.id);}}
+  return result;
+ };
+ const p1=convert('p1'),p23=convert('p23'),p4=convert('p4');
+ const ov={p23:{},p4:{}};
+ for(const [ph,actual] of [['p23',p23],['p4',p4]]){
+  const expected={};for(const [id,a] of Object.entries(p1)){if(a.building==='Mobile')expected[id]=a;else if(routes[ph][a.building])expected[id]={building:routes[ph][a.building],role:a.role};}
+  for(const id of new Set([...Object.keys(expected),...Object.keys(actual)]))if(JSON.stringify(expected[id]||null)!==JSON.stringify(actual[id]||null))ov[ph][id]=actual[id]||null;
+ }
+ return {version:2,players:ps,master:p1,overrides:ov,input:d.input||names.join('\n')};
+}
+function planData(){return {version:2,players:clone(players),master:clone(master),overrides:clone(overrides),commander,input:$('#input').value};}
+function applyPlan(raw,shared=false){
+ const d=normaliseLegacy(raw);if(!d||!Array.isArray(d.players))throw Error('Invalid plan');
+ players=d.players;master=d.master||{};overrides={p23:d.overrides?.p23||{},p4:d.overrides?.p4||{}};commander=d.commander||null;
+ $('#input').value=d.input||players.map(p=>p.name).join('\n');selected=null;history=[];render();
+ $('#sharedLoaded').classList.toggle('hidden',!shared);
+}
+function encode(o){const bytes=new TextEncoder().encode(JSON.stringify(o));let s='';for(let i=0;i<bytes.length;i+=8192)s+=String.fromCharCode(...bytes.subarray(i,i+8192));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function decode(s){let v=s.replace(/-/g,'+').replace(/_/g,'/');while(v.length%4)v+='=';const raw=atob(v);return JSON.parse(new TextDecoder().decode(Uint8Array.from(raw,c=>c.charCodeAt(0))));}
+async function copy(s){try{await navigator.clipboard.writeText(s);alert('Copied.')}catch(e){const t=document.createElement('textarea');t.value=s;document.body.appendChild(t);t.select();document.execCommand('copy');t.remove();alert('Copied, or select and copy manually if your browser blocked it.');}}
+function save(){localStorage.setItem('arcFoundryPWA2',JSON.stringify(planData()));alert('Saved on this device.');}
+function restore(){const s=localStorage.getItem('arcFoundryPWA2')||localStorage.getItem('arcFoundryVisualV36')||localStorage.getItem('arcFoundryVisualV2');if(!s)return alert('No saved plan found.');try{applyPlan(JSON.parse(s))}catch(e){alert('Could not read saved plan: '+e.message)}}
+function share(){const base=location.href.split('#')[0].split('?')[0];$('#shareLink').value=base+'#plan='+encode(planData());$('#sharePanel').classList.remove('hidden');}
+function undo(){if(!history.length)return;const prev=history.pop();({master,overrides,players,commander}=prev);$('#input').value=players.map(p=>p.name).join('\n');selected=null;render();}
+$('#rosterBtn').onclick=loadRoster;$('#autoP1').onclick=autoP1;
+$('#autoP23').onclick=()=>{if(confirm('Clear Phase 2/3 local overrides and restore the Phase 1-derived plan?')){snapshot();overrides.p23={};phase='p23';syncTabs();render();}};
+$('#transition').onclick=nextPhase;
+$('#clear').onclick=()=>{if(!confirm('Clear assignments in this phase?'))return;snapshot();if(phase==='p1')master={};else{overrides[phase]={};for(const id of Object.keys(derive(phase)))overrides[phase][id]=null;}render()};
+$('#unassign').onclick=()=>{if(selected)updateAssignment(selected,null)};
+$('#clearSelection').onclick=()=>{selected=null;render()};
+$('#filterMissing').onclick=()=>{filterMissing=!filterMissing;renderRoster()};
+$('#undo').onclick=undo;
+$('#save').onclick=save;$('#load').onclick=restore;
+$('#reset').onclick=()=>{if(confirm('Reset the entire plan and roster?')){snapshot();players=[];master={};overrides={p23:{},p4:{}};commander=null;$('#input').value='';selected=null;render()}};
+$('#sharePlan').onclick=share;$('#copyShareLink').onclick=()=>copy($('#shareLink').value);$('#closeShare').onclick=()=>$('#sharePanel').classList.add('hidden');
+$('#toOutputs').onclick=()=>setView('outputs');$('#generateAll').onclick=generateAll;$('#backPlanner').onclick=()=>setView('planner');
+$('#refreshBoard').onclick=renderBoard;$('#backPlannerBoard').onclick=()=>setView('planner');$('#copyBoardText').onclick=()=>copy(phases.map(ph=>phaseOutputs(ph).discord).join('\n\n'));
+for(const t of document.querySelectorAll('.tab'))t.onclick=()=>{phase=t.dataset.p;syncTabs();render()};
+for(const t of document.querySelectorAll('.viewtab'))t.onclick=()=>setView(t.dataset.view);
+for(const b of document.querySelectorAll('[data-copy]'))b.onclick=()=>copy($('#'+b.dataset.copy).value);
+$('#commander').onchange=e=>{snapshot();commander=e.target.value||null};
+function commanderOptions(){const sel=$('#commander');sel.innerHTML='<option value="">None</option>'+players.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');sel.value=commander||'';}
+const baseRender=render;render=function(){commanderOptions();baseRender()};
+try{if(location.hash.startsWith('#plan='))applyPlan(decode(location.hash.slice(6)),true);else render()}catch(e){alert('Shared link could not be read: '+e.message);render()}
+syncTabs();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>
