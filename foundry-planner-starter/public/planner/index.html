@@ -137,7 +137,7 @@ select{background:#07111f;color:white;border:1px solid var(--line);border-radius
     <button class="viewtab active" data-view="planner">Planner</button>
     <button class="viewtab" data-view="outputs">Plan Extracts</button>
     <button class="viewtab" data-view="board">Overall Board</button>
-    <button class="btn primary" id="cloudSave">Save to Cloud</button><button class="btn" id="cloudLoad">Open Cloud Plan</button><button class="btn" id="cloudNew">Save Cloud Copy</button><button class="btn" id="cloudLinks">Cloud Links</button>
+    <button class="btn primary" id="cloudSave">Save to Cloud</button><button class="btn" id="cloudLoad">Saved Plans</button><button class="btn" id="cloudNew">Save Cloud Copy</button><button class="btn" id="cloudLinks">Cloud Links</button>
     <button class="btn" id="save">Save on Device</button>
     <button class="btn" id="load">Load Device Save</button>
     <button class="btn primary" id="sharePlan">Share Plan</button>
@@ -257,6 +257,13 @@ select{background:#07111f;color:white;border:1px solid var(--line);border-radius
 
 </div>
 
+<dialog id="savedPlansDialog" style="background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;width:min(540px,94vw);max-height:85vh">
+<div class="toolbar"><h2 style="margin:0;flex:1">Saved Plans</h2><button class="btn" id="closeSavedPlans">Close</button></div>
+<p class="small">Cloud plans saved or opened in this browser. Open an edit link once on another device to add that plan to its list.</p>
+<input id="savedPlansSearch" type="search" placeholder="Search plans" aria-label="Search saved plans" style="width:100%;padding:10px;margin-bottom:10px">
+<div id="savedPlansList"></div>
+<button class="btn" id="addCloudLink" style="margin-top:12px">Open a plan link</button>
+</dialog>
 <script>
 const defs={
 p1:{zones:true,priority:['🥇 P1 + P2 — 4 strong each','🥈 Boiler','🥉 Transit','4️⃣ Repairs'],b:[
@@ -507,7 +514,27 @@ async function cloudRequest(url,options={}){const r=await fetch(url,{...options,
 async function saveCloud(asCopy=false){if(cloudBusy)return;if(cloudPlan&&!cloudPlan.key&&!asCopy)return alert('This is a view link. Use Save Cloud Copy to create your own editable plan.');const title=prompt('Cloud plan name',cloudPlan?.title||'Foundry Plan');if(title===null)return;cloudBusy=true;cloudMessage('Saving to cloud…');try{const current=asCopy?null:cloudPlan;const body={title,plan:planData(),expectedUpdatedAt:current?.updated_at};const d=await cloudRequest('/api/cloud-plans'+(current?'/'+current.id:''),{method:current?'PUT':'POST',headers:current?{'Authorization':'Bearer '+current.key}:{},body:JSON.stringify(body)});cloudPlan={id:d.id,title:d.title,updated_at:d.updated_at,key:d.edit_key||current?.key};rememberCloud();window.history.replaceState(null,'',cloudURL(true));cloudMessage('Saved to cloud: '+d.title+' — '+new Date(d.updated_at).toLocaleString());if(!current)showCloudLinks();}catch(e){cloudMessage(e.message);alert(e.message);}finally{cloudBusy=false;}}
 async function openCloud(link,ask=true){if(cloudBusy)return;let u;try{u=new URL(link,location.origin);if(u.origin!==location.origin)throw Error('Use a cloud plan link from this planner.');}catch(e){return alert(e.message);}const id=u.searchParams.get('cloud');if(!id)return alert('The link must contain a cloud plan ID.');if(ask&&!confirm('Replace the plan on screen with this cloud save? Save on Device first if needed.'))return;cloudBusy=true;cloudMessage('Loading cloud plan…');try{const d=await cloudRequest('/api/cloud-plans/'+encodeURIComponent(id));applyPlan(d.plan_json);let remembered={};try{remembered=JSON.parse(localStorage.getItem('arcCloudPlans')||'{}')[id]||{}}catch(e){}cloudPlan={id:d.id,title:d.title,updated_at:d.updated_at,key:new URLSearchParams(u.hash.slice(1)).get('edit')||remembered.key};rememberCloud();window.history.replaceState(null,'',cloudURL(!!cloudPlan.key));cloudMessage('Loaded '+d.title+(cloudPlan.key?' — editable':' — view link; save a copy to edit'));}catch(e){cloudMessage(e.message);alert(e.message);}finally{cloudBusy=false;}}
 function showCloudLinks(){if(!cloudPlan)return alert('Save to Cloud first.');const view=cloudURL();const edit=cloudPlan.key?cloudURL(true):'';$('#shareLink').value='View latest saved plan:\n'+view+(edit?'\n\nEdit link — anyone with this link can update the plan:\n'+edit:'');$('#sharePanel').classList.remove('hidden');}
-$('#cloudSave').onclick=()=>saveCloud();$('#cloudNew').onclick=()=>saveCloud(true);$('#cloudLinks').onclick=showCloudLinks;$('#cloudLoad').onclick=()=>{let saved='';try{saved=Object.values(JSON.parse(localStorage.getItem('arcCloudPlans')||'{}')).map(s=>s.title+': '+location.origin+location.pathname+'?cloud='+s.id).join('\n')}catch(e){}const link=prompt('Paste a cloud plan link.\n'+saved);if(link)openCloud(link);};
+$('#cloudSave').onclick=()=>saveCloud();$('#cloudNew').onclick=()=>saveCloud(true);$('#cloudLinks').onclick=showCloudLinks;
+function savedCloudPlans(){try{return Object.values(JSON.parse(localStorage.getItem('arcCloudPlans')||'{}')).filter(s=>s&&s.id).sort((a,b)=>(Date.parse(b.updated_at)||0)-(Date.parse(a.updated_at)||0));}catch(e){return [];}}
+function renderSavedPlans(){
+ const list=$('#savedPlansList');list.replaceChildren();
+ const query=$('#savedPlansSearch').value.toLowerCase();
+ const plans=savedCloudPlans().filter(s=>(s.title||'Foundry Plan').toLowerCase().includes(query));
+ if(!plans.length){const p=document.createElement('p');p.textContent=query?'No matching plans.':'No saved plans yet. Save to Cloud to add your first plan.';list.appendChild(p);}
+ for(const s of plans){
+ const b=document.createElement('button');b.className='btn';b.style.cssText='display:block;width:100%;text-align:left;margin:6px 0';
+ const title=document.createElement('div');title.textContent=s.title||'Foundry Plan';
+ const detail=document.createElement('div');detail.className='small';detail.textContent=(s.updated_at?new Date(s.updated_at).toLocaleString():'')+' · '+(s.key?'Editable':'View only');
+ b.append(title,detail);
+ b.onclick=()=>{if(cloudBusy)return;const u=new URL(location.pathname,location.origin);u.searchParams.set('cloud',s.id);if(s.key)u.hash='edit='+s.key;$('#savedPlansDialog').close();openCloud(u.href);};
+ list.appendChild(b);
+ }
+}
+$('#cloudLoad').onclick=()=>{$('#savedPlansSearch').value='';renderSavedPlans();$('#savedPlansDialog').showModal();};
+$('#closeSavedPlans').onclick=()=>$('#savedPlansDialog').close();
+$('#savedPlansSearch').oninput=renderSavedPlans;
+$('#addCloudLink').onclick=()=>{const link=prompt('Paste a cloud plan link');if(link){$('#savedPlansDialog').close();openCloud(link);}};
+
 
 try{if(location.hash.startsWith('#plan='))applyPlan(decode(location.hash.slice(6)),true);else render()}catch(e){alert('Shared link could not be read: '+e.message);render()}
 syncTabs();
