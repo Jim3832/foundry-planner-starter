@@ -1,9 +1,13 @@
-# ARC Foundry Planner v4.3
+# ARC Foundry Planner v4.4 — cloud saves
 
-The main page opens the complete v4.3 PWA built on 4 October 2026. Its original files are in public/planner/ and can also be opened directly at /planner/index.html.
+Main page opens the PWA at /planner/index.html. Manual overrides are unlimited and automatic assignments retain v4.3 behaviour.
 
-Manual building overrides have no player limit. Automatic assignments remain unchanged. Phase 1 edits flow into later phases; later phase edits remain independent overrides.
+Save to Cloud creates a named plan or updates the opened plan. Open Cloud Plan accepts a cloud link. Save Cloud Copy creates a separate plan. Cloud Links shows a view link and a secret edit link. Anyone with the view link can read the latest saved plan; anyone with the edit link can update it. Keep edit links private. Saves are manual, not real-time collaboration. Conflicting updates are rejected; save a copy to preserve your work before reloading.
 
-Plans save on the device. Share Plan generates a snapshot link, not live collaboration or a cloud save. Existing v3.6 share links can be imported by retaining their #plan= fragment on the new planner URL. Keep backups before migrating.
+Save on Device and snapshot Share Plan still work offline. Cloud saves require an internet connection. Saved edit links are remembered on the device; retain an edit link to recover access on another device.
 
-The existing Next.js and Vercel project structure is retained. Run npm install, then npm run dev or npm run build from this directory. The older Supabase API and plan routes are retained for compatibility but the v4.3 planner does not use them.
+## Deployment setup
+
+In Vercel, set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to the existing Supabase project values. Never put the service role key in browser code or a NEXT_PUBLIC key variable. Create the plans table using supabase_schema.sql if it does not exist, then run cloud_save_security.sql to remove anonymous direct table access. Redeploy after changing environment variables.
+
+Run npm install and npm run build from this directory. Cloud storage is unavailable until Supabase is configured. The UI shows failures and preserves the plan on screen.

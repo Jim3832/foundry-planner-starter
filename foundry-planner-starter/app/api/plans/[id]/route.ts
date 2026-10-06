@@ -8,7 +8,7 @@ export async function GET(req: NextRequest, context: any) {
 
   const { data, error } = await supabase
     .from('plans')
-    .select('*')
+    .select('id,title,player_input,plan_json,settings_json,created_at,updated_at')
     .eq('id', id)
     .single();
 
@@ -50,7 +50,7 @@ export async function PUT(req: NextRequest, context: any) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .select('*')
+    .select('id,title,player_input,plan_json,settings_json,created_at,updated_at')
     .single();
 
   if (error) {
